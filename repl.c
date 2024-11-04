@@ -1,8 +1,11 @@
+//Boucle REPL : Read-Eval-Print Loop
+
 #include <stdbool.h>
 #include <string.h>
-
-
-
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>   // Pour ssize_t
+#include "repl.h"  // pour le lien avec l'entête
 
 typedef enum {
   META_COMMAND_SUCCESS,
