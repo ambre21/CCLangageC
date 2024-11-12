@@ -1,4 +1,3 @@
-
 #ifndef BTREE_H
 #define BTREE_H
 
@@ -13,10 +12,13 @@ typedef struct Node {
     struct Node* right;
 } Node;
 
-typedef struct {
+typedef struct Table {
     Node* root;
     int next_id;
-    char name[32]; // Ajouter un champ pour le nom de la table
+    char name[32];
 } Table;
+
+Node* insert_into_btree(Node* root, Row new_row);
+void print_btree(Node* root);
 
 #endif //BTREE_H

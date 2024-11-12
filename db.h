@@ -1,22 +1,23 @@
+
 #ifndef DB_H
 #define DB_H
 
-#include "btree.h"  // Pour accéder à la structure Table
+// Déclaration anticipée
+struct Table;
 
 // Table de la db
 typedef struct TableNode {
     char name[32];
-    Table* table;
+    struct Table* table;
     struct TableNode* next;
 } TableNode;
 
 // DB complète
 typedef struct {
     TableNode* first;
-    Table* current_table;
+    struct Table* current_table;
     int nb_tables;
 } Db;
-
 
 void create_table(Db* db, const char* name);
 void select_table(Db* db, const char* name);

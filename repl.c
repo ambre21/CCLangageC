@@ -1,5 +1,5 @@
 //Boucle REPL : Read-Eval-Print Loop
-
+#define _GNU_SOURCE
 #include <stdbool.h>
 #include <string.h>
 #include <stdio.h>
@@ -7,6 +7,7 @@
 #include <unistd.h>   // Pour ssize_t
 #include "repl.h"  // pour le lien avec l'entête
 #include "db.h"  // pour le lien avec la bdd
+#include "btree.h"  // pour les fonctions insert_into_btree et print_btree
 
 //*****Enumération
 typedef enum { //résultat des métacommandes (commence par .exit)
@@ -54,6 +55,8 @@ InputBuffer* new_input_buffer() { // initialiser le buffer
 void print_prompt() { // affichage user (db > au début de la ligne)
   printf("db > ");
 }
+
+
 
 void read_input(InputBuffer* input_buffer) { // lit l'entrée user
   ssize_t bytes_read =
@@ -158,18 +161,19 @@ PrepareResult prepare_statement(InputBuffer* input_buffer, Statement* statement)
 }
 
 void execute_statement(Statement* statement, Db* db) { //exécute la commande sql
+   TableNode* current;
    switch (statement->type) {
-     case (STATEMENT_CREATE_TABLE):
+     case STATEMENT_CREATE_TABLE:
        create_table(db, statement->table_name);
-     break;
+       break;
 
-     case (STATEMENT_LIST_TABLES):
+     case STATEMENT_LIST_TABLES:
        list_tables(db);
-     break;
+       break;
 
-     case (STATEMENT_INSERT):
+     case STATEMENT_INSERT:
        // Sélectionne la table à insérer
-       TableNode* current = db->first;
+       current = db->first;
        while (current != NULL) {
          if (strcmp(current->name, statement->table_name) == 0) {
            db->current_table = current->table;
@@ -192,23 +196,22 @@ void execute_statement(Statement* statement, Db* db) { //exécute la commande sq
        new_row.name[sizeof(new_row.name) - 1] = '\0';
 
        // Insère la ligne dans l'arbre binaire de la table
-     printf("Avant l'insertion de ID = %d, Nom = %s dans l'arbre.\n", new_row.id, new_row.name);
-     db->current_table->root = insert_into_btree(db->current_table->root, new_row);
-     printf("Après l'insertion de ID = %d.\n", new_row.id);
+       printf("Avant l'insertion de ID = %d, Nom = %s dans l'arbre.\n", new_row.id, new_row.name);
+       db->current_table->root = insert_into_btree(db->current_table->root, new_row);
+       printf("Après l'insertion de ID = %d.\n", new_row.id);
 
-     break;
+       break;
 
-     case (STATEMENT_SELECT):
+     case STATEMENT_SELECT:
        if (db->current_table == NULL) {
          printf("Erreur : Aucune table sélectionnée. Utilisez la commande USE pour sélectionner une table.\n");
          break;
        }
        printf("Contenu de la table sélectionnée :\n");
        print_btree(db->current_table->root);
-     break;
+       break;
   }
 }
-
 
 //*****Boucle REPL
 void repl(void){ //interraction avec le user
@@ -221,19 +224,19 @@ void repl(void){ //interraction avec le user
     read_input(input_buffer); //lit entrée user
     if (input_buffer->buffer[0] == '.') {  // vérification si meta-commande
       switch (do_meta_command(input_buffer)) {
-        case (META_COMMAND_SUCCESS):
+        case META_COMMAND_SUCCESS:
           continue;
-        case (META_COMMAND_UNRECOGNIZED_COMMAND):
+        case META_COMMAND_UNRECOGNIZED_COMMAND:
           printf("Commande non reconnue : '%s'\n", input_buffer->buffer);
           continue;
       }
     }
     Statement statement;
     switch (prepare_statement(input_buffer, &statement)) { // voit si reconnait commande sql
-      case (PREPARE_SUCCESS):
+      case PREPARE_SUCCESS:
         printf("recognized statement\n");
         break;
-      case (PREPARE_UNRECOGNIZED_STATEMENT):
+      case PREPARE_UNRECOGNIZED_STATEMENT:
         printf("Unrecognized keyword at start of '%s'.\n",
                input_buffer->buffer);
         continue;
