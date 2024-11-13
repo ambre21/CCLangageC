@@ -40,6 +40,11 @@ Node* insert_into_btree(Node* root, Row data) {
 void print_btree(Node* root) {
     if (root == NULL) return;
     print_btree(root->left);
-    printf("ID: %d, Nom: %s\n", root->data.id, root->data.name);
+    // Assurer que le champ name n'est pas NULL
+    if (root->data.name != NULL) {
+        printf("ID: %-3d | Nom: %-20s\n", root->data.id, root->data.name);
+    } else {
+        printf("ID: %-3d | Nom: <NULL>\n", root->data.id);
+    }
     print_btree(root->right);
 }
