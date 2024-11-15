@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "btree.h" // pour le lien avec le fichier entête
+#include "utils.h"
 
 Node* insert_into_btree(Node* root, Row data, int num_columns) {
     if (root == NULL) {
@@ -25,7 +26,7 @@ Node* insert_into_btree(Node* root, Row data, int num_columns) {
         // Copier chaque valeur
         for (int i = 0; i < num_columns; i++) {
             if (data.values[i] != NULL) {
-                new_node->data.values[i] = strdup(data.values[i]);
+                new_node->data.values[i] = my_strdup(data.values[i]);
                 if (new_node->data.values[i] == NULL) {
                     printf("Erreur d'allocation mémoire pour la valeur de la colonne %d.\n", i);
                     exit(EXIT_FAILURE);
@@ -53,7 +54,6 @@ Node* insert_into_btree(Node* root, Row data, int num_columns) {
 }
 
 void print_btree(Node* root, Table* table) {
-  	printf("test");
     if (root == NULL) return;
 
     print_btree(root->left, table);
@@ -111,6 +111,3 @@ void print_btree_with_columns(Node* root, Table* table, int* column_indices, int
 
     print_btree_with_columns(root->right, table, column_indices, num_columns, where_condition);
 }
-
-
-

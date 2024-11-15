@@ -1,5 +1,7 @@
 //Boucle REPL : Read-Eval-Print Loop
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE
+#endif
 #include <stdbool.h>
 #include <string.h>
 #include <stdio.h>
@@ -10,6 +12,7 @@
 #include "repl.h"     // pour le lien avec l'entête
 #include "db.h"       // pour le lien avec la bdd
 #include "btree.h"    // pour les fonctions insert_into_btree et print_btree
+#include "utils.h"
 
 //*****Enumération
 typedef enum { //résultat des métacommandes (commence par .exit)
@@ -367,23 +370,23 @@ void execute_statement(Statement* statement, Db* db) {
 
     		char* val_token = strtok(vals_copy, ",");
     		for (int i = 0; i < num_specified_columns; i++) {
-        		if (val_token == NULL) {
-            		printf("Erreur : Nombre de valeurs inférieur au nombre de colonnes spécifiées.\n");
-            		free(new_row.values);
-            		return;
-        		}
+          if (val_token == NULL) {
+              printf("Erreur : Nombre de valeurs inférieur au nombre de colonnes spécifiées.\n");
+              free(new_row.values);
+              return;
+          }
 
-        		trim_whitespace(val_token);
-        		if (*val_token == '\'') val_token++;  // Retirer les guillemets
-        		char* end = val_token + strlen(val_token) - 1;
-        		if (*end == '\'') *end = '\0';
+          trim_whitespace(val_token);
+          if (*val_token == '\'') val_token++;  // Retirer les guillemets
+          char* end = val_token + strlen(val_token) - 1;
+          if (*end == '\'') *end = '\0';
 
-        		// Sauvegarder la valeur pour la colonne correspondante
-        		int col_index = column_indices[i];
-        		new_row.values[col_index] = strdup(val_token); // Allouer et copier la valeur
+          // Sauvegarder la valeur pour la colonne correspondante
+          int col_index = column_indices[i];
+          new_row.values[col_index] = my_strdup(val_token); // Allouer et copier la valeur
 
-        		val_token = strtok(NULL, ",");
-    		}
+          val_token = strtok(NULL, ",");
+      }
 
     		// Vérifier qu'il n'y a pas de valeurs supplémentaires
     		if (val_token != NULL) {

@@ -6,7 +6,7 @@ CC = gcc
 
 CFLAGS = -Wall -Wextra -std=c11
 
-OBJS = main.o repl.o btree.o db.o storage.o
+OBJS = main.o repl.o btree.o db.o storage.o utils.o
 
 # Compilation
 $(TARGET): $(OBJS)
@@ -16,10 +16,10 @@ $(TARGET): $(OBJS)
 main.o: main.c repl.h db.h
 	$(CC) $(CFLAGS) -c main.c
 
-repl.o: repl.c repl.h db.h btree.h
+repl.o: repl.c repl.h db.h btree.h utils.h
 	$(CC) $(CFLAGS) -c repl.c
 
-btree.o: btree.c btree.h
+btree.o: btree.c btree.h utils.h
 	$(CC) $(CFLAGS) -c btree.c
 
 db.o : db.c db.h btree.h
@@ -27,6 +27,9 @@ db.o : db.c db.h btree.h
 
 storage.o: storage.c storage.h
 	$(CC) $(CFLAGS) -c storage.c
+
+utils.o: utils.c utils.h
+	$(CC) $(CFLAGS) -c utils.c
 
 # Nettoyage des fichiers objets et de l'exécutable
 clean:
