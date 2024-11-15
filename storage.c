@@ -14,6 +14,8 @@ void save_db(Db* db, const char* filename) {
         return;
     }
 
+    fprintf(file, "DATABASE_START\n");
+
     TableNode* current_table = db->first;
     while (current_table != NULL) {
         fprintf(file, "TABLE %s\n", current_table->name);
@@ -28,7 +30,7 @@ void save_db(Db* db, const char* filename) {
         }
         fprintf(file, "\n");
 
-        // Sauvegarde des lignes
+        // Sauvegarde des lignes dans l'arbre binaire
         void save_btree(Node* root, FILE* file, int num_columns) {
             if (root == NULL) return;
 
@@ -48,6 +50,8 @@ void save_db(Db* db, const char* filename) {
         current_table = current_table->next;
     }
 
+    fprintf(file, "DATABASE_END\n");
+
     fclose(file);
     printf("Base de données sauvegardée dans '%s'.\n", filename);
 }
@@ -65,7 +69,9 @@ void load_db(Db* db, const char* filename) {
     while (fgets(line, sizeof(line), file)) {
         trim_whitespace(line);
 
-        if (strncmp(line, "TABLE ", 6) == 0) {
+        if (strcmp(line, "DATABASE_START") == 0) {
+            continue;
+        } else if (strncmp(line, "TABLE ", 6) == 0) {
             // Création de la table
             char* table_name = line + 6;
             create_table(db, table_name);
@@ -76,7 +82,7 @@ void load_db(Db* db, const char* filename) {
             char* col_name = strtok(columns, ",");
             while (col_name != NULL) {
                 trim_whitespace(col_name);
-                add_column(current_table, col_name);
+                add_column(db, current_table->name, col_name);
                 col_name = strtok(NULL, ",");
             }
         } else if (strncmp(line, "ROW ", 4) == 0) {
@@ -102,6 +108,10 @@ void load_db(Db* db, const char* filename) {
                 new_row.values[i] = values[i];
             }
             current_table->root = insert_into_btree(current_table->root, new_row, current_table->num_columns);
+        } else if (strcmp(line, "END_TABLE") == 0) {
+            current_table = NULL;
+        } else if (strcmp(line, "DATABASE_END") == 0) {
+            break;
         }
     }
 

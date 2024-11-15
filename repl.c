@@ -87,7 +87,7 @@ void close_input_buffer(InputBuffer* input_buffer) { // Libère la mémoire du b
 
 
 //*****Meta-Commandes
-MetaCommandResult do_meta_command(InputBuffer* input_buffer) { // vérifie si le user a entré une métacommande : commence par .
+MetaCommandResult do_meta_command(InputBuffer* input_buffer, Db* db) { // vérifie si le user a entré une métacommande : commence par .
 	if (strcmp(input_buffer->buffer, ".exit") == 0) {
     	close_input_buffer(input_buffer);
     	exit(EXIT_SUCCESS);
@@ -104,34 +104,16 @@ MetaCommandResult do_meta_command(InputBuffer* input_buffer) { // vérifie si le
   	} else if (strncmp(input_buffer->buffer, ".save", 5) == 0) {
     	char* filename = input_buffer->buffer + 6;
     	trim_whitespace(filename);
-    	save_db(&db, filename);
+    	save_db(db, filename);
     	return META_COMMAND_SUCCESS;
  	} else if (strncmp(input_buffer->buffer, ".load", 5) == 0) {
     	char* filename = input_buffer->buffer + 6;
     	trim_whitespace(filename);
-    	load_db(&db, filename);
+    	load_db(db, filename);
     	return META_COMMAND_SUCCESS;
 	} else {
     	return META_COMMAND_UNRECOGNIZED_COMMAND;
   	}
-}
-
-void trim_whitespace(char* str) {
-    // Supprimer les espaces en début
-    while(isspace((unsigned char)*str)) str++;
-
-    if(*str == 0) {
-      // Si la chaîne est vide
-        *str = '\0';
-        return;
-    }
-
-    // Supprimer les espaces en fin
-    char* end = str + strlen(str) - 1;
-    while(end > str && isspace((unsigned char)*end)) end--;
-
-    // Terminer la chaîne
-    *(end+1) = '\0';
 }
 
 
@@ -520,7 +502,7 @@ void repl(void){ //interraction avec le user
     print_prompt(); // affiche invite de commande
     read_input(input_buffer); //lit entrée user
     if (input_buffer->buffer[0] == '.') {  // vérification si meta-commande
-      switch (do_meta_command(input_buffer)) {
+      switch (do_meta_command(input_buffer, &db)) {
         case META_COMMAND_SUCCESS:
           continue;
         case META_COMMAND_UNRECOGNIZED_COMMAND:
