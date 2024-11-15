@@ -51,18 +51,6 @@ void create_table(Db* db, const char* name) {
     printf("La table '%s' a été créée avec succès.\n", name);
 }
 
-void select_table(Db* db, const char* name) {
-    TableNode* current = db->first;
-    while (current != NULL) {
-        if (strcmp(current->name, name) == 0) {
-            db->current_table = current->table;
-            printf("La table '%s' sélectionnée.\n", name);
-            return;
-        }
-        current = current->next;
-    }
-    printf("Erreur : La table '%s' n'existe pas.\n", name);
-}
 
 void list_tables(const Db* db) {
     if (db->first == NULL) {

@@ -7,11 +7,11 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <stdlib.h>
-#include <unistd.h>   // Pour ssize_t
-#include <assert.h>   // pour les assert (code de test)
-#include "repl.h"     // pour le lien avec l'entête
-#include "db.h"       // pour le lien avec la bdd
-#include "btree.h"    // pour les fonctions insert_into_btree et print_btree
+#include <unistd.h>
+#include <assert.h>
+#include "repl.h"
+#include "db.h"
+#include "btree.h"
 #include "utils.h"
 
 //*****Enumération
@@ -41,7 +41,6 @@ typedef struct {
     char column_names[1024];  	// Noms des colonnes pour INSERT (ex : "name, age")
     char values[1024];        	// Valeurs correspondantes pour INSERT (ex : "1, 'Alice'")
     char column_name[32];     	// Pour ADD COLUMN : nom de la nouvelle colonne
-    char where_condition[1024]; // Pour SELECT (condition WHERE)
 } Statement;
 
 typedef struct { 		 //Permet de gérer l'entrée utilisateur
@@ -64,8 +63,6 @@ InputBuffer* new_input_buffer() { // initialiser le buffer
 void print_prompt() { // affichage user (db > au début de la ligne)
   printf("db > ");
 }
-
-
 
 void read_input(InputBuffer* input_buffer) { // lit l'entrée user
   ssize_t bytes_read =
@@ -98,7 +95,7 @@ MetaCommandResult do_meta_command(InputBuffer* input_buffer) { // vérifie si le
     printf(".exit 																- Quitter le programme\n");
     printf(".help 																- Afficher cette aide\n");
     printf("insert into <table> (<colonne1>,<colonne2>) values (value1,value2)	- Insérer un nouvel enregistrement\n");
-    printf("select 																- Afficher tous les enregistrements\n");
+    printf("select <colones> from <table>										- Afficher tous les enregistrements\n");
     printf("create table <table_name> 											- Création d'une nouvelle table\n");
     printf("add column <table_name> <column_name> 								- Ajouter une colonne dans une table\n");
     printf("list tables 														- Lister toutes les tables de la base de donnée\n");
@@ -231,26 +228,9 @@ PrepareResult prepare_statement(InputBuffer* input_buffer, Statement* statement)
 
     	// Extraire le nom de la table
     	char* table_start = from_pos + 5;
-    	char* where_pos = strstr(table_start, "where");
-
-    	if (where_pos != NULL) {
-        	// Gestion du WHERE
-        	size_t len_table = where_pos - table_start;
-        	strncpy(statement->table_name, table_start, len_table);
-        	statement->table_name[len_table] = '\0';
-        	trim_whitespace(statement->table_name);
-
-        	// Extraire la condition WHERE
-        	strncpy(statement->where_condition, where_pos + 6, sizeof(statement->where_condition) - 1);
-        	statement->where_condition[sizeof(statement->where_condition) - 1] = '\0';
-        	trim_whitespace(statement->where_condition);
-    	} else {
-        	// Pas de condition WHERE
-        	strncpy(statement->table_name, table_start, sizeof(statement->table_name) - 1);
-        	statement->table_name[sizeof(statement->table_name) - 1] = '\0';
-        	trim_whitespace(statement->table_name);
-    	}
-
+    	strncpy(statement->table_name, table_start, sizeof(statement->table_name) - 1);
+		statement->table_name[sizeof(statement->table_name) - 1] = '\0';
+		trim_whitespace(statement->table_name);
     	return PREPARE_SUCCESS;
 	}
 
@@ -370,23 +350,23 @@ void execute_statement(Statement* statement, Db* db) {
 
     		char* val_token = strtok(vals_copy, ",");
     		for (int i = 0; i < num_specified_columns; i++) {
-          if (val_token == NULL) {
-              printf("Erreur : Nombre de valeurs inférieur au nombre de colonnes spécifiées.\n");
-              free(new_row.values);
-              return;
-          }
+          		if (val_token == NULL) {
+              		printf("Erreur : Nombre de valeurs inférieur au nombre de colonnes spécifiées.\n");
+              		free(new_row.values);
+              		return;
+          		}
 
-          trim_whitespace(val_token);
-          if (*val_token == '\'') val_token++;  // Retirer les guillemets
-          char* end = val_token + strlen(val_token) - 1;
-          if (*end == '\'') *end = '\0';
+          		trim_whitespace(val_token);
+          		if (*val_token == '\'') val_token++;  // Retirer les guillemets
+          		char* end = val_token + strlen(val_token) - 1;
+          		if (*end == '\'') *end = '\0';
 
-          // Sauvegarder la valeur pour la colonne correspondante
-          int col_index = column_indices[i];
-          new_row.values[col_index] = my_strdup(val_token); // Allouer et copier la valeur
+          		// Sauvegarder la valeur pour la colonne correspondante
+          		int col_index = column_indices[i];
+          		new_row.values[col_index] = my_strdup(val_token); // Allouer et copier la valeur
 
-          val_token = strtok(NULL, ",");
-      }
+          		val_token = strtok(NULL, ",");
+      		}
 
     		// Vérifier qu'il n'y a pas de valeurs supplémentaires
     		if (val_token != NULL) {
@@ -404,103 +384,85 @@ void execute_statement(Statement* statement, Db* db) {
     		break;
 
         case STATEMENT_SELECT:
-    // Vérifier la base de données et la liste des tables
-    if (db == NULL || db->first == NULL) {
-        printf("Erreur : La base de données ou la liste des tables est NULL.\n");
-        return;
-    }
+    		// Vérifier la base de données et la liste des tables
+    		if (db == NULL || db->first == NULL) {
+        		printf("Erreur : La base de données ou la liste des tables est NULL.\n");
+       	 		return;
+    		}
 
-    // Trouver la table
-    current = db->first;
-    db->current_table = NULL;
+    		// Trouver la table
+    		current = db->first;
+    		db->current_table = NULL;
 
-    while (current != NULL) {
-        if (strcmp(current->name, statement->table_name) == 0) {
-            db->current_table = current->table;
-            break;
-        }
-        current = current->next;
-    }
+    		while (current != NULL) {
+        		if (strcmp(current->name, statement->table_name) == 0) {
+            		db->current_table = current->table;
+            		break;
+        		}
+        		current = current->next;
+    		}
 
-    if (db->current_table == NULL) {
-        printf("Erreur : La table '%s' n'existe pas.\n", statement->table_name);
-        return;
-    }
+    		if (db->current_table == NULL) {
+        		printf("Erreur : La table '%s' n'existe pas.\n", statement->table_name);
+        		return;
+    		}
 
-    // Vérifier que la table a des colonnes
-    if (db->current_table->num_columns <= 0) {
-        printf("Erreur : La table '%s' n'a pas de colonnes définies.\n", statement->table_name);
-        return;
-    }
+    		// Vérifier que la table a des colonnes
+    		if (db->current_table->num_columns <= 0) {
+        		printf("Erreur : La table '%s' n'a pas de colonnes définies.\n", statement->table_name);
+        		return;
+    		}
 
-    // Vérifier les colonnes spécifiées
-    char cols_copy2[1024];
-    strncpy(cols_copy2, statement->column_names, sizeof(cols_copy2) - 1);
-    cols_copy2[sizeof(cols_copy2) - 1] = '\0';
-    trim_whitespace(cols_copy2);
+    		// Vérifier les colonnes spécifiées
+    		char cols_copy2[1024];
+    		strncpy(cols_copy2, statement->column_names, sizeof(cols_copy2) - 1);
+    		cols_copy2[sizeof(cols_copy2) - 1] = '\0';
+    		trim_whitespace(cols_copy2);
 
-    int column_indices2[100];
-    int num_columns_to_select = 0;
+    		int column_indices2[100];
+    		int num_columns_to_select = 0;
 
-    if (strcmp(cols_copy2, "*") == 0) {
-        // Sélectionner toutes les colonnes
-        for (int i = 0; i < db->current_table->num_columns; i++) {
-            column_indices2[num_columns_to_select++] = i;
-        }
-    } else {
-        // Vérifier et sélectionner les colonnes demandées
-        char* col_token = strtok(cols_copy2, ",");
-        while (col_token != NULL) {
-            trim_whitespace(col_token);
-            int found = 0;
-            for (int i = 0; i < db->current_table->num_columns; i++) {
-                if (strcmp(db->current_table->columns[i].name, col_token) == 0) {
-                    column_indices2[num_columns_to_select++] = i;
-                    found = 1;
-                    break;
-                }
-            }
-            if (!found) {
-                printf("Erreur : Colonne '%s' non trouvée dans la table '%s'.\n", col_token, statement->table_name);
-                return;
-            }
-            col_token = strtok(NULL, ",");
-        }
-    }
+    		if (strcmp(cols_copy2, "*") == 0) {
+        		// Sélectionner toutes les colonnes
+        		for (int i = 0; i < db->current_table->num_columns; i++) {
+            		column_indices2[num_columns_to_select++] = i;
+        		}
+    		} else {
+        		// Vérifier et sélectionner les colonnes demandées
+        		char* col_token = strtok(cols_copy2, ",");
+        		while (col_token != NULL) {
+            		trim_whitespace(col_token);
+            		int found = 0;
+            		for (int i = 0; i < db->current_table->num_columns; i++) {
+                		if (strcmp(db->current_table->columns[i].name, col_token) == 0) {
+                    		column_indices2[num_columns_to_select++] = i;
+                    		found = 1;
+                    		break;
+                		}
+            		}
+            		if (!found) {
+                		printf("Erreur : Colonne '%s' non trouvée dans la table '%s'.\n", col_token, statement->table_name);
+                		return;
+            		}
+            		col_token = strtok(NULL, ",");
+        		}
+    		}
 
-    // Vérifier si des colonnes ont été sélectionnées
-    if (num_columns_to_select <= 0) {
-        printf("Erreur : Aucune colonne valide spécifiée pour la sélection.\n");
-        return;
-    }
+    		// Vérifier si des colonnes ont été sélectionnées
+    		if (num_columns_to_select <= 0) {
+        		printf("Erreur : Aucune colonne valide spécifiée pour la sélection.\n");
+        		return;
+    		}
 
-    // Parcourir et afficher les lignes
-    if (db->current_table->root == NULL) {
-        printf("La table '%s' est vide.\n", statement->table_name);
-        return;
-    }
+    		// Parcourir et afficher les lignes
+    		if (db->current_table->root == NULL) {
+        		printf("La table '%s' est vide.\n", statement->table_name);
+        		return;
+    		}
 
-    printf("Résultat de la table '%s':\n", statement->table_name);
-   printf("La racine de l'arbre (root): %p\n", db->current_table->root);
-printf("Table courante (current_table): %p\n", db->current_table);
-
-printf("Indices des colonnes sélectionnées: ");
-for (int i = 0; i < num_columns_to_select; i++) {
-    printf("%d ", column_indices2[i]);
-}
-printf("\n");
-
-printf("Nombre de colonnes à sélectionner: %d\n", num_columns_to_select);
-
-if (statement->where_condition != NULL && strlen(statement->where_condition) > 0) {
-    printf("Condition WHERE: %s\n", statement->where_condition);
-} else {
-    printf("Aucune condition WHERE spécifiée.\n");
-}
-    print_btree_with_columns(db->current_table->root, db->current_table, column_indices2, num_columns_to_select, statement->where_condition);
-    break;
-
-
+    		printf("Résultat de la table '%s':\n", statement->table_name);
+    		print_btree_with_columns(db->current_table->root, db->current_table, column_indices2, num_columns_to_select);
+    		break;
 
         case STATEMENT_ADD_COLUMN:
     		// Trouver la table à laquelle ajouter la colonne
@@ -533,7 +495,7 @@ if (statement->where_condition != NULL && strlen(statement->where_condition) > 0
 
 		default:
     		printf("Erreur : Type de commande non reconnu.\n");
-    	break;
+    		break;
     }
 }
 

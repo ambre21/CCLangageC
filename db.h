@@ -20,7 +20,6 @@ typedef struct {
 } Db;
 
 void create_table(Db* db, const char* name);
-void select_table(Db* db, const char* name);
 void list_tables(const Db* db);
 void init_db(Db* db);
 void free_db(Db* db);

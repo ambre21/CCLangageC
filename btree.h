@@ -30,7 +30,6 @@ typedef struct Table {
 
 // Déclarations des fonctions liées à l'arbre binaire
 Node* insert_into_btree(Node* root, Row data, int num_columns);
-void print_btree(Node* root, Table* table);
-void print_btree_with_columns(Node* root, Table* table, int* column_indices, int num_columns, const char* where_condition);
+void print_btree_with_columns(Node* root, Table* table, int* column_indices, int num_columns);
 
 #endif //BTREE_H

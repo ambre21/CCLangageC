@@ -39,7 +39,6 @@ Node* insert_into_btree(Node* root, Row data, int num_columns) {
         return new_node;
     }
 
-    printf("Comparaison de ID = %d avec ID = %d\n", data.id, root->data.id);
 
     if (data.id < root->data.id) {
         root->left = insert_into_btree(root->left, data, num_columns);
@@ -53,33 +52,12 @@ Node* insert_into_btree(Node* root, Row data, int num_columns) {
     return root;
 }
 
-void print_btree(Node* root, Table* table) {
-    if (root == NULL) return;
 
-    print_btree(root->left, table);
-
-    printf("ID: %-3d | ", root->data.id);
-    for (int i = 0; i < table->num_columns; i++) {
-        // Assurer que la valeur n'est pas NULL
-        if (root->data.values[i] != NULL) {
-            printf("%s: %-20s | ", table->columns[i].name, root->data.values[i]);
-        } else {
-            printf("%s: <NULL>              | ", table->columns[i].name);
-        }
-    }
-    printf("\n");
-
-    print_btree(root->right, table);
-}
-
-void print_btree_with_columns(Node* root, Table* table, int* column_indices, int num_columns, const char* where_condition) {
+void print_btree_with_columns(Node* root, Table* table, int* column_indices, int num_columns) {
     if (root == NULL) {
         printf("Noeud NULL atteint.\n");
         return;
     }
-
-    // Debugging : Afficher le contenu du nœud actuel
-    printf("Traitement du nœud avec ID = %d\n", root->data.id);
 
     // Vérification de `values`
     if (root->data.values == NULL) {
@@ -87,7 +65,7 @@ void print_btree_with_columns(Node* root, Table* table, int* column_indices, int
         return;
     }
 
-    print_btree_with_columns(root->left, table, column_indices, num_columns, where_condition);
+    print_btree_with_columns(root->left, table, column_indices, num_columns);
 
     // Affichage des colonnes
     printf("ID: %-3d | ", root->data.id);
@@ -109,5 +87,5 @@ void print_btree_with_columns(Node* root, Table* table, int* column_indices, int
     }
     printf("\n");
 
-    print_btree_with_columns(root->right, table, column_indices, num_columns, where_condition);
+    print_btree_with_columns(root->right, table, column_indices, num_columns);
 }
