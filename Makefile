@@ -3,7 +3,7 @@ TARGET = cc_langage_c
 
 CC = gcc
 
-CFLAGS = -Wall -Wextra -std=c11
+CFLAGS = -Wall -Wextra -std=c11 -g
 
 OBJS = main.o repl.o btree.o db.o storage.o utils.o
 
