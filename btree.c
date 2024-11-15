@@ -4,30 +4,45 @@
 #include <stdlib.h>
 #include "btree.h" // pour le lien avec le fichier entête
 
-Node* insert_into_btree(Node* root, Row data) {
-  printf("test");
+Node* insert_into_btree(Node* root, Row data, int num_columns) {
     if (root == NULL) {
-        printf("Création d'un nouveau nœud avec ID = %d, Nom = %s\n", data.id, data.name);
+        printf("Création d'un nouveau nœud avec ID = %d\n", data.id);
         Node* new_node = (Node*)malloc(sizeof(Node));
         if (new_node == NULL) {
             printf("Erreur d'allocation mémoire pour le nouveau nœud.\n");
             exit(EXIT_FAILURE);
         }
-        new_node->data = data;
+
+        // Allouer de la mémoire pour les valeurs de la ligne
+        new_node->data.id = data.id;
+        new_node->data.values = calloc(num_columns, sizeof(char*));
+        if (new_node->data.values == NULL) {
+            printf("Erreur d'allocation mémoire pour les valeurs.\n");
+            exit(EXIT_FAILURE);
+        }
+
+        // Copier chaque valeur
+        for (int i = 0; i < num_columns; i++) {
+            if (data.values[i] != NULL) {
+                new_node->data.values[i] = strdup(data.values[i]);
+                if (new_node->data.values[i] == NULL) {
+                    printf("Erreur d'allocation mémoire pour la valeur de la colonne %d.\n", i);
+                    exit(EXIT_FAILURE);
+                }
+            }
+        }
+
         new_node->left = NULL;
         new_node->right = NULL;
         return new_node;
     }
 
-    // Afficher l'état actuel de l'arbre avant de décider où insérer
     printf("Comparaison de ID = %d avec ID = %d\n", data.id, root->data.id);
 
     if (data.id < root->data.id) {
-        printf("Insertion de ID = %d dans le sous-arbre gauche de ID = %d\n", data.id, root->data.id);
-        root->left = insert_into_btree(root->left, data);
+        root->left = insert_into_btree(root->left, data, num_columns);
     } else if (data.id > root->data.id) {
-        printf("Insertion de ID = %d dans le sous-arbre droit de ID = %d\n", data.id, root->data.id);
-        root->right = insert_into_btree(root->right, data);
+        root->right = insert_into_btree(root->right, data, num_columns);
     } else {
         // ID déjà présent, ne pas insérer
         printf("ID = %d déjà présent dans l'arbre. Ignorer l'insertion.\n", data.id);
@@ -36,15 +51,22 @@ Node* insert_into_btree(Node* root, Row data) {
     return root;
 }
 
-
-void print_btree(Node* root) {
+void print_btree(Node* root, Table* table) {
     if (root == NULL) return;
-    print_btree(root->left);
-    // Assurer que le champ name n'est pas NULL
-    if (root->data.name != NULL) {
-        printf("ID: %-3d | Nom: %-20s\n", root->data.id, root->data.name);
-    } else {
-        printf("ID: %-3d | Nom: <NULL>\n", root->data.id);
+
+    print_btree(root->left, table);
+
+    printf("ID: %-3d | ", root->data.id);
+    for (int i = 0; i < table->num_columns; i++) {
+        // Assurer que la valeur n'est pas NULL
+        if (root->data.values[i] != NULL) {
+            printf("%s: %-20s | ", table->columns[i].name, root->data.values[i]);
+        } else {
+            printf("%s: <NULL>              | ", table->columns[i].name);
+        }
     }
-    print_btree(root->right);
+    printf("\n");
+
+    print_btree(root->right, table);
 }
+

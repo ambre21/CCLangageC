@@ -8,8 +8,8 @@ typedef struct Column {
 
 // Représente une ligne dans la table (données)
 typedef struct {
-    int id;
-    char name[32];
+    int id;         // ID unique pour chaque ligne
+    char** values;  // Tableau de valeurs (une valeur par colonne)
 } Row;
 
 // Représente un nœud dans l'arbre binaire
@@ -29,8 +29,8 @@ typedef struct Table {
 } Table;
 
 // Déclarations des fonctions liées à l'arbre binaire
-Node* insert_into_btree(Node* root, Row new_row);
-void print_btree(Node* root);
+Node* insert_into_btree(Node* root, Row data, int num_columns);
+void print_btree(Node* root, Table* table);
 
 
 #endif //BTREE_H

@@ -92,13 +92,13 @@ MetaCommandResult do_meta_command(InputBuffer* input_buffer) { // vérifie si le
     exit(EXIT_SUCCESS);
   } else if (strcmp(input_buffer->buffer, ".help") == 0) {
     printf("Commandes disponibles :\n");
-    printf(".exit         														   - Quitter le programme\n");
-    printf(".help         														   - Afficher cette aide\n");
-    printf("insert into <table> (<colonne1>, <colonne2>) values (value1, value2)   - Insérer un nouvel enregistrement\n");
-    printf("select        														   - Afficher tous les enregistrements\n");
-    printf("create table <table_name>        									   - Création d'une nouvelle table\n");
-    printf("add column <table_name> <column_name>			   					   - Ajouter une colonne dans une table\n");
-    printf("list tables       					   								   - Lister toutes les tables de la base de donnée\n");
+    printf(".exit 																- Quitter le programme\n");
+    printf(".help 																- Afficher cette aide\n");
+    printf("insert into <table> (<colonne1>,<colonne2>) values (value1,value2)	- Insérer un nouvel enregistrement\n");
+    printf("select 																- Afficher tous les enregistrements\n");
+    printf("create table <table_name> 											- Création d'une nouvelle table\n");
+    printf("add column <table_name> <column_name> 								- Ajouter une colonne dans une table\n");
+    printf("list tables 														- Lister toutes les tables de la base de donnée\n");
     return META_COMMAND_SUCCESS;
   } else {
     return META_COMMAND_UNRECOGNIZED_COMMAND;
@@ -297,49 +297,97 @@ void execute_statement(Statement* statement, Db* db) {
             list_tables(db);
             break;
 
-        case STATEMENT_INSERT:
-            // Trouver la table
-            current = db->first;
-            db->current_table = NULL;
+		case STATEMENT_INSERT:
+    		// Trouver la table
+    		current = db->first;
+    		db->current_table = NULL;
 
-            while (current != NULL) {
-                if (strcmp(current->name, statement->table_name) == 0) {
-                    db->current_table = current->table;
-                    break;
-                }
-                current = current->next;
-            }
+   			while (current != NULL) {
+        		if (strcmp(current->name, statement->table_name) == 0) {
+            		db->current_table = current->table;
+            		break;
+        		}
+        		current = current->next;
+    		}
 
-            // Vérifier que la table existe
-            if (db->current_table == NULL) {
-                printf("Erreur : La table '%s' n'existe pas.\n", statement->table_name);
-                return;
-            }
+    		// Vérifier que la table existe
+    		if (db->current_table == NULL) {
+        		printf("Erreur : La table '%s' n'existe pas.\n", statement->table_name);
+        		return;
+    		}
 
-            // Créer une nouvelle ligne
-            Row new_row;
-            new_row.id = db->current_table->next_id++;
+    		// Vérifier que les colonnes spécifiées sont valides
+    		char cols_copy[1024];
+    		strncpy(cols_copy, statement->column_names, sizeof(cols_copy) - 1);
+    		cols_copy[sizeof(cols_copy) - 1] = '\0';
 
-            // Assigner les valeurs aux colonnes spécifiées
-            if (strstr(statement->column_names, "name") != NULL) {
-                // Extraire la valeur de 'name' et l'assigner à 'new_row.name'
-                char* value_name = strtok(statement->values, ",");
-                if (value_name != NULL) {
-                    // Supprimer les espaces et les guillemets autour de la valeur
-                    while (*value_name == ' ' || *value_name == '\'') value_name++;
-                    char* end = value_name + strlen(value_name) - 1;
-                    while (end > value_name && (*end == ' ' || *end == '\'')) end--;
-                    end[1] = '\0';
+    		int column_indices[100];
+    		int num_specified_columns = 0;
+    		char* col_token = strtok(cols_copy, ",");
+    		while (col_token != NULL) {
+        		trim_whitespace(col_token);
 
-                    strncpy(new_row.name, value_name, sizeof(new_row.name) - 1);
-                    new_row.name[sizeof(new_row.name) - 1] = '\0';
-                }
-            }
+        		int found = 0;
+        		for (int i = 0; i < db->current_table->num_columns; i++) {
+            		if (strcmp(db->current_table->columns[i].name, col_token) == 0) {
+                		column_indices[num_specified_columns++] = i;
+                		found = 1;
+                		break;
+            		}
+        		}
 
-            // Insérer dans l'arbre binaire
-            db->current_table->root = insert_into_btree(db->current_table->root, new_row);
-            printf("Ligne insérée avec succès dans la table '%s'.\n", db->current_table->name);
-            break;
+        		if (!found) {
+            		printf("Erreur : Colonne '%s' non trouvée dans la table '%s'.\n", col_token, statement->table_name);
+           			return;
+        		}
+
+        		col_token = strtok(NULL, ",");
+    		}
+
+    		// Créer une nouvelle ligne avec des valeurs dynamiques
+    		Row new_row;
+    		new_row.id = db->current_table->next_id++;
+   			new_row.values = calloc(db->current_table->num_columns, sizeof(char*));
+
+    		// Extraire les valeurs et les insérer dans les champs correspondants
+    		char vals_copy[1024];
+    		strncpy(vals_copy, statement->values, sizeof(vals_copy) - 1);
+    		vals_copy[sizeof(vals_copy) - 1] = '\0';
+
+    		char* val_token = strtok(vals_copy, ",");
+    		for (int i = 0; i < num_specified_columns; i++) {
+        		if (val_token == NULL) {
+            		printf("Erreur : Nombre de valeurs inférieur au nombre de colonnes spécifiées.\n");
+            		free(new_row.values);
+            		return;
+        		}
+
+        		trim_whitespace(val_token);
+        		if (*val_token == '\'') val_token++;  // Retirer les guillemets
+        		char* end = val_token + strlen(val_token) - 1;
+        		if (*end == '\'') *end = '\0';
+
+        		// Sauvegarder la valeur pour la colonne correspondante
+        		int col_index = column_indices[i];
+        		new_row.values[col_index] = strdup(val_token); // Allouer et copier la valeur
+
+        		val_token = strtok(NULL, ",");
+    		}
+
+    		// Vérifier qu'il n'y a pas de valeurs supplémentaires
+    		if (val_token != NULL) {
+        		printf("Erreur : Nombre de valeurs supérieur au nombre de colonnes spécifiées.\n");
+        		for (int i = 0; i < db->current_table->num_columns; i++) {
+            		free(new_row.values[i]);
+        		}
+        		free(new_row.values);
+        		return;
+    		}
+
+    		// Insérer dans l'arbre binaire
+    		db->current_table->root = insert_into_btree(db->current_table->root, new_row, db->current_table->num_columns);
+    		printf("Ligne insérée avec succès dans la table '%s'.\n", db->current_table->name);
+    		break;
 
         case STATEMENT_SELECT:
             // Vérifie qu'une table a été sélectionnée
@@ -355,7 +403,7 @@ void execute_statement(Statement* statement, Db* db) {
             }
 
             printf("Contenu de la table '%s' :\n", db->current_table->name);
-            print_btree(db->current_table->root);
+            print_btree(db->current_table->root, db->current_table);
             break;
 
         case STATEMENT_ADD_COLUMN:
