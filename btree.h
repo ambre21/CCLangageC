@@ -4,7 +4,6 @@
 // Représente une colonne dans une table
 typedef struct Column {
     char name[32];    // Nom de la colonne
-    char type[32];    // Type de la colonne (par exemple, int, varchar)
 } Column;
 
 // Représente une ligne dans la table (données)

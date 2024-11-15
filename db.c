@@ -79,7 +79,7 @@ void list_tables(const Db* db) {
 }
 
 // Fonction pour ajouter une colonne à une table
-void add_column(Db* db, const char* table_name, const char* column_name, const char* column_type) {
+void add_column(Db* db, const char* table_name, const char* column_name) {
     TableNode* current = db->first;
 
     // Cherche la table spécifiée
@@ -93,12 +93,10 @@ void add_column(Db* db, const char* table_name, const char* column_name, const c
                 Column new_column;
                 strncpy(new_column.name, column_name, sizeof(new_column.name) - 1);
                 new_column.name[sizeof(new_column.name) - 1] = '\0';
-                strncpy(new_column.type, column_type, sizeof(new_column.type) - 1);
-                new_column.type[sizeof(new_column.type) - 1] = '\0';
 
                 // Ajoute la nouvelle colonne à la table
                 table->columns[table->num_columns++] = new_column;
-                printf("Colonne '%s' de type '%s' ajoutée à la table '%s'.\n", column_name, column_type, table_name);
+                printf("Colonne '%s' ajoutée à la table '%s'.\n", column_name, table_name);
             } else {
                 printf("Erreur : La table '%s' a atteint le nombre maximum de colonnes.\n", table_name);
             }
@@ -109,6 +107,7 @@ void add_column(Db* db, const char* table_name, const char* column_name, const c
 
     printf("Erreur : La table '%s' n'existe pas.\n", table_name);
 }
+
 
 void free_db(Db* db) {
     TableNode* current = db->first;
