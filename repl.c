@@ -209,37 +209,48 @@ PrepareResult prepare_statement(InputBuffer* input_buffer, Statement* statement)
         return PREPARE_SUCCESS;
     }
 
-    // **SELECT
+	//**Select
     if (strncmp(input_buffer->buffer, "select", 6) == 0) {
-        statement->type = STATEMENT_SELECT;
+    	statement->type = STATEMENT_SELECT;
 
-        char* cols_start = input_buffer->buffer + 7;
-        char* from_pos = strstr(cols_start, "from");
-        if (from_pos == NULL) {
-            printf("Erreur de format : 'from' manquant dans la commande SELECT.\n");
-            return PREPARE_UNRECOGNIZED_STATEMENT;
-        }
+    	// Extraire les colonnes
+    	char* cols_start = input_buffer->buffer + 7;
+    	char* from_pos = strstr(cols_start, "from");
+    	if (from_pos == NULL) {
+        	printf("Erreur de format : 'from' manquant dans la commande SELECT.\n");
+        	return PREPARE_UNRECOGNIZED_STATEMENT;
+    	}
 
-        size_t len_cols = from_pos - cols_start;
-        strncpy(statement->column_names, cols_start, len_cols);
-        statement->column_names[len_cols] = '\0';
+    	size_t len_cols = from_pos - cols_start;
+    	strncpy(statement->column_names, cols_start, len_cols);
+    	statement->column_names[len_cols] = '\0';
+    	trim_whitespace(statement->column_names);
 
-        char* table_start = from_pos + 5;
-        char* where_pos = strstr(table_start, "where");
+    	// Extraire le nom de la table
+    	char* table_start = from_pos + 5;
+    	char* where_pos = strstr(table_start, "where");
 
-        // cela permet de gérer les cas où il n'y a pas de condition WHERE
-        if (where_pos != NULL) {
-            size_t len_table = where_pos - table_start;
-            strncpy(statement->table_name, table_start, len_table);
-            statement->table_name[len_table] = '\0';
-            strcpy(statement->where_condition, where_pos + 6); // après "where "
-        } else {
-            strncpy(statement->table_name, table_start, sizeof(statement->table_name) - 1);
-            statement->table_name[sizeof(statement->table_name) - 1] = '\0';
-        }
+    	if (where_pos != NULL) {
+        	// Gestion du WHERE
+        	size_t len_table = where_pos - table_start;
+        	strncpy(statement->table_name, table_start, len_table);
+        	statement->table_name[len_table] = '\0';
+        	trim_whitespace(statement->table_name);
 
-        return PREPARE_SUCCESS;
-    }
+        	// Extraire la condition WHERE
+        	strncpy(statement->where_condition, where_pos + 6, sizeof(statement->where_condition) - 1);
+        	statement->where_condition[sizeof(statement->where_condition) - 1] = '\0';
+        	trim_whitespace(statement->where_condition);
+    	} else {
+        	// Pas de condition WHERE
+        	strncpy(statement->table_name, table_start, sizeof(statement->table_name) - 1);
+        	statement->table_name[sizeof(statement->table_name) - 1] = '\0';
+        	trim_whitespace(statement->table_name);
+    	}
+
+    	return PREPARE_SUCCESS;
+	}
+
 
     // **CREATE TABLE
     if (strncmp(input_buffer->buffer, "create table", 12) == 0) {
@@ -390,21 +401,63 @@ void execute_statement(Statement* statement, Db* db) {
     		break;
 
         case STATEMENT_SELECT:
-            // Vérifie qu'une table a été sélectionnée
-            if (db->current_table == NULL) {
-                printf("Erreur : Aucune table sélectionnée. Utilisez la commande pour sélectionner une table.\n");
-                return;
-            }
+    		// Trouver la table
+    		current = db->first;
+    		db->current_table = NULL;
 
-            // Vérifie que l'arbre binaire n'est pas NULL
-            if (db->current_table->root == NULL) {
-                printf("Erreur : L'arbre binaire de la table est vide.\n");
-                return;
-            }
+    		while (current != NULL) {
+        		if (strcmp(current->name, statement->table_name) == 0) {
+           			db->current_table = current->table;
+            		break;
+        		}
+        		current = current->next;
+    		}
 
-            printf("Contenu de la table '%s' :\n", db->current_table->name);
-            print_btree(db->current_table->root, db->current_table);
-            break;
+    		if (db->current_table == NULL) {
+        		printf("Erreur : La table '%s' n'existe pas.\n", statement->table_name);
+        		return;
+    		}
+
+    		// Vérifier les colonnes spécifiées
+    		char cols_copy2[1024];
+    		strncpy(cols_copy2, statement->column_names, sizeof(cols_copy2) - 1);
+    		cols_copy2[sizeof(cols_copy2) - 1] = '\0';
+    		trim_whitespace(cols_copy2);
+
+    		int column_indices2[100];
+    		int num_columns_to_select = 0;
+
+    		if (strcmp(cols_copy2, "*") == 0) {
+        		// Sélectionner toutes les colonnes
+        		for (int i = 0; i < db->current_table->num_columns; i++) {
+            		column_indices2[num_columns_to_select++] = i;
+        		}
+    		} else {
+        		// Vérifier et sélectionner les colonnes demandées
+        		char* col_token = strtok(cols_copy2, ",");
+        		while (col_token != NULL) {
+            		trim_whitespace(col_token);
+            		int found = 0;
+            		for (int i = 0; i < db->current_table->num_columns; i++) {
+                		if (strcmp(db->current_table->columns[i].name, col_token) == 0) {
+                    		column_indices2[num_columns_to_select++] = i;
+                    		found = 1;
+                    		break;
+                		}
+            		}
+            		if (!found) {
+                		printf("Erreur : Colonne '%s' non trouvée dans la table '%s'.\n", col_token, statement->table_name);
+                		return;
+            		}
+            		col_token = strtok(NULL, ",");
+        		}
+    		}
+
+    		// Parcourir et afficher les lignes
+    		printf("Résultat de la table '%s':\n", statement->table_name);
+    		print_btree_with_columns(db->current_table->root, db->current_table, column_indices2, num_columns_to_select, statement->where_condition);
+   			break;
+
 
         case STATEMENT_ADD_COLUMN:
     		// Trouver la table à laquelle ajouter la colonne
