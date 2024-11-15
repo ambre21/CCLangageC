@@ -13,6 +13,7 @@
 #include "db.h"
 #include "btree.h"
 #include "utils.h"
+#include "storage.h"
 
 //*****Enumération
 typedef enum { //résultat des métacommandes (commence par .exit)
@@ -87,22 +88,32 @@ void close_input_buffer(InputBuffer* input_buffer) { // Libère la mémoire du b
 
 //*****Meta-Commandes
 MetaCommandResult do_meta_command(InputBuffer* input_buffer) { // vérifie si le user a entré une métacommande : commence par .
-  if (strcmp(input_buffer->buffer, ".exit") == 0) {
-    close_input_buffer(input_buffer);
-    exit(EXIT_SUCCESS);
-  } else if (strcmp(input_buffer->buffer, ".help") == 0) {
-    printf("Commandes disponibles :\n");
-    printf(".exit 																- Quitter le programme\n");
-    printf(".help 																- Afficher cette aide\n");
-    printf("insert into <table> (<colonne1>,<colonne2>) values (value1,value2)	- Insérer un nouvel enregistrement\n");
-    printf("select <colones> from <table>										- Afficher tous les enregistrements\n");
-    printf("create table <table_name> 											- Création d'une nouvelle table\n");
-    printf("add column <table_name> <column_name> 								- Ajouter une colonne dans une table\n");
-    printf("list tables 														- Lister toutes les tables de la base de donnée\n");
-    return META_COMMAND_SUCCESS;
-  } else {
-    return META_COMMAND_UNRECOGNIZED_COMMAND;
-  }
+	if (strcmp(input_buffer->buffer, ".exit") == 0) {
+    	close_input_buffer(input_buffer);
+    	exit(EXIT_SUCCESS);
+  	} else if (strcmp(input_buffer->buffer, ".help") == 0) {
+    	printf("Commandes disponibles :\n");
+    	printf(".exit 																- Quitter le programme\n");
+    	printf(".help 																- Afficher cette aide\n");
+    	printf("insert into <table> (<colonne1>,<colonne2>) values (value1,value2)	- Insérer un nouvel enregistrement\n");
+    	printf("select <colones> from <table>										- Afficher tous les enregistrements\n");
+    	printf("create table <table_name> 											- Création d'une nouvelle table\n");
+    	printf("add column <table_name> <column_name> 								- Ajouter une colonne dans une table\n");
+    	printf("list tables 														- Lister toutes les tables de la base de donnée\n");
+    	return META_COMMAND_SUCCESS;
+  	} else if (strncmp(input_buffer->buffer, ".save", 5) == 0) {
+    	char* filename = input_buffer->buffer + 6;
+    	trim_whitespace(filename);
+    	save_db(&db, filename);
+    	return META_COMMAND_SUCCESS;
+ 	} else if (strncmp(input_buffer->buffer, ".load", 5) == 0) {
+    	char* filename = input_buffer->buffer + 6;
+    	trim_whitespace(filename);
+    	load_db(&db, filename);
+    	return META_COMMAND_SUCCESS;
+	} else {
+    	return META_COMMAND_UNRECOGNIZED_COMMAND;
+  	}
 }
 
 void trim_whitespace(char* str) {
