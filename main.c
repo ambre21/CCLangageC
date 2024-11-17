@@ -11,7 +11,7 @@ int main(int argc, char* argv[], char* envp[]){
     (void)argc;
     (void)argv;
     (void)envp;
-  printf("Bienvenue dans la base de données !\n"); // test pour la création du makefile
+  printf("Bienvenue dans la base de données !\n"); 
   repl();
   return 0;
   
