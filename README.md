@@ -4,6 +4,12 @@ Un projet éducatif implémentant un système simple de gestion de bases de donn
 
 ---
 
+## **Créateur**
+
+Ambre LAURENT 2A5
+
+---
+
 ## **Fonctionnalités**
 
 - **Création et gestion de bases de données** :
