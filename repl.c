@@ -93,14 +93,17 @@ MetaCommandResult do_meta_command(InputBuffer* input_buffer, Db* db) { // vérif
     	exit(EXIT_SUCCESS);
   	} else if (strcmp(input_buffer->buffer, ".help") == 0) {
     	printf("Commandes disponibles :\n");
-    	printf(".exit 																- Quitter le programme\n");
-    	printf(".help 																- Afficher cette aide\n");
-    	printf("insert into <table> (<colonne1>,<colonne2>) values (value1,value2)	- Insérer un nouvel enregistrement\n");
-    	printf("select <colones> from <table>										- Afficher tous les enregistrements\n");
-    	printf("create table <table_name> 											- Création d'une nouvelle table\n");
-    	printf("add column <table_name> <column_name> 								- Ajouter une colonne dans une table\n");
-    	printf("list tables 														- Lister toutes les tables de la base de donnée\n");
-    	return META_COMMAND_SUCCESS;
+		printf(".exit                              - Quitter le programme\n");
+		printf(".help                              - Afficher cette aide\n");
+		printf(".save <filename>                   - Sauvegarder la base de données dans un fichier\n");
+		printf(".load <filename>                   - Charger une base de données depuis un fichier\n");
+		printf("insert into <table> (<col1>,<col2>) values (val1,val2) - Insérer un nouvel enregistrement\n");
+		printf("select <col1>,<col2> from <table>  - Afficher les colonnes spécifiées d'une table\n");
+		printf("select * from <table>              - Afficher tous les enregistrements d'une table\n");
+		printf("create table <table_name>          - Créer une nouvelle table\n");
+		printf("add column <table_name> <col_name> - Ajouter une colonne dans une table\n");
+		printf("list tables                        - Lister toutes les tables de la base de données\n");
+		return META_COMMAND_SUCCESS;
   	} else if (strncmp(input_buffer->buffer, ".save", 5) == 0) {
     	char* filename = input_buffer->buffer + 6;
     	trim_whitespace(filename);
