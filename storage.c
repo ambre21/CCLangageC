@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "storage.h"
-#include "btree.h" // Si nécessaire pour manipuler les arbres binaires
+#include "btree.h" 
 #include "utils.h" // Pour trim_whitespace et my_strdup
 
 // Sauvegarder la base de données
@@ -75,7 +75,7 @@ void load_db(Db* db, const char* filename) {
             // Création de la table
             char* table_name = line + 6;
             create_table(db, table_name);
-            current_table = db->first->table; // Assumer que la table est ajoutée en tête
+            current_table = db->first->table; 
         } else if (strncmp(line, "COLUMNS ", 8) == 0) {
             // Ajouter les colonnes
             char* columns = line + 8;
