@@ -16,7 +16,7 @@
 #include "storage.h"
 
 //*****Enumération
-typedef enum { //résultat des métacommandes (commence par .exit)
+typedef enum { //résultat des métacommandes 
   META_COMMAND_SUCCESS,
   META_COMMAND_UNRECOGNIZED_COMMAND
 } MetaCommandResult;
@@ -37,17 +37,17 @@ typedef enum { // Type de commande sql possible
 
 //*****Structure
 typedef struct {
-    StatementType type;       	// Type de la commande (INSERT, SELECT, etc.)
-    char table_name[32];      	// Nom de la table (pour CREATE, INSERT, SELECT...)
-    char column_names[1024];  	// Noms des colonnes pour INSERT (ex : "name, age")
-    char values[1024];        	// Valeurs correspondantes pour INSERT (ex : "1, 'Alice'")
-    char column_name[32];     	// Pour ADD COLUMN : nom de la nouvelle colonne
+    StatementType type;       	
+    char table_name[32];      	
+    char column_names[1024];  	
+    char values[1024];        	
+    char column_name[32];     	
 } Statement;
 
-typedef struct { 		 //Permet de gérer l'entrée utilisateur
-  char* buffer; 		 //pointe vers texte du user
-  size_t buffer_length; // longueur du buffer
-  ssize_t input_length; // longueur du texte saisi
+typedef struct { 		 
+  char* buffer; 		 
+  size_t buffer_length;
+  ssize_t input_length; 
 } InputBuffer;
 
 
@@ -240,13 +240,13 @@ PrepareResult prepare_statement(InputBuffer* input_buffer, Statement* statement)
         return PREPARE_SUCCESS;
     }
 
-    // **LIST TABLES**
+    // **LIST TABLES
     if (strcmp(input_buffer->buffer, "list tables") == 0) {
         statement->type = STATEMENT_LIST_TABLES;
         return PREPARE_SUCCESS;
     }
 
-    // **ADD COLUMN**
+    // **ADD COLUMN
     if (strncmp(input_buffer->buffer, "add column", 10) == 0) {
     	statement->type = STATEMENT_ADD_COLUMN;
 
