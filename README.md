@@ -6,7 +6,7 @@ Un projet éducatif implémentant un système simple de gestion de bases de donn
 
 ## **Créateur**
 
-Ambre LAURENT 2A5
+Ambre LAURENT 3SI1
 
 ---
 
